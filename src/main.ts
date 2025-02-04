@@ -35,7 +35,7 @@ export default class ExcelConvertor {
         const stats = fs.statSync(sourceFilePath);
         if (stats.isFile()) {
           const fileExtension = path.extname(file);  // Get the file extension
-          if (fileExtension === this.getFileExtFromDirectionConversion(conoversionDirection, true)) {
+          if (fileExtension === this.getFileExtFromDirectionConversion(conoversionDirection, 1)) {
             const destinationFilePath: string = this.getDestinationFilePath(
               conoversionDirection, 
               sourceFilePath, 
@@ -89,23 +89,11 @@ export default class ExcelConvertor {
     return [sourcePath, destinationPath];
   }
 
-  getFileExtFromDirectionConversion(conoversionDirection: string, inverse: boolean = false) {
-
-    let outputFileExtension: string = ""
-    if (conoversionDirection === "convertexcel") {
-      if (!inverse) {
-        outputFileExtension = '.json'
-      } else {
-        outputFileExtension = '.xlsx'
-      }
-    } else if (conoversionDirection === "convertjson") {   
-      if (!inverse) {
-        outputFileExtension = '.xlsx'
-      } else {
-        outputFileExtension = '.json'
-      }
-    }
-    return outputFileExtension
+  getFileExtFromDirectionConversion(conoversionDirection: string, inverse: number = 0) {
+    const conoversionDirections: Array<string> = ["convertexcel", "convertjson"]
+    const fileExtIndex: number = conoversionDirections.indexOf(conoversionDirection) ^ (inverse ^ 1)
+    const outputFileExtensions: Array<string> = ['.xlsx', '.json']
+    return outputFileExtensions[fileExtIndex]
   }
 
   // Adds file name output file to the dir path.
@@ -123,7 +111,7 @@ export default class ExcelConvertor {
       const outputFileExtension: string = this.getFileExtFromDirectionConversion(conoversionDirection);
 
       const outputFileName = sourceFileName + outputFileExtension
-      destinationPath = path.join(destinationPath, outputFileName);  
+      destinationPath = path.join(destinationPath, outputFileName);
     } else if (stats.isFile()) {
       destinationPath = destinationPath;
     } else {
