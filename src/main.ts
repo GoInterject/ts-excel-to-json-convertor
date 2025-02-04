@@ -11,13 +11,14 @@ export default class ExcelConvertor {
 
   async chooseConvertor(
     conoversionDirection: string, 
+    conversionMode: string, 
     sourcePath: string, 
     destinationPath: string
   ): Promise<void> {
 
     const [praparedSourcePath, praparedDestinationPath] = this.preparesSourceAndDestionationPaths(sourcePath, destinationPath);
 
-    let selectedAction: (sourcePath: string, destinationPath: string) => void = () => {};
+    let selectedAction: (conversionMode: string, sourcePath: string, destinationPath: string) => void = () => {};
 
     if (conoversionDirection === "convertexcel") {
       selectedAction = this.convertExcelToJSON;
@@ -41,7 +42,7 @@ export default class ExcelConvertor {
               sourceFilePath, 
               praparedDestinationPath
             );
-            selectedAction(sourceFilePath, destinationFilePath);
+            selectedAction(conversionMode, sourceFilePath, destinationFilePath);
           }
         }
       });
@@ -53,7 +54,7 @@ export default class ExcelConvertor {
         praparedSourcePath, 
         praparedDestinationPath
       );
-      selectedAction(praparedSourcePath, destinationFilePath);
+      selectedAction(conversionMode, praparedSourcePath, destinationFilePath);
 
     }
 
@@ -121,23 +122,29 @@ export default class ExcelConvertor {
     return destinationPath;
   }
 
-  async convertExcelToJSON(excelFilePath: string, outputJsonPath: string): Promise<void> {
+  async convertExcelToJSON(conversionMode: string, excelFilePath: string, outputJsonPath: string): Promise<void> {
 
     try {
       const data = fs.readFileSync(excelFilePath);
     
       const workbook: XLSX.WorkBook = XLSX.read(data);
-    
-      // Convert workbook to JSON (each sheet as an array of rows)
-      const sheetData: ExcelSheetData = workbook.SheetNames.reduce((acc: ExcelSheetData, sheetName: string) => {
-        const sheet: XLSX.WorkSheet = workbook.Sheets[sheetName];
-        const jsonData: Array<Record<string, any>> = XLSX.utils.sheet_to_json(sheet);
-        acc[sheetName] = jsonData;
-        return acc;
-      }, {});
-    
+      
+      let jsonData: string = ""
+      if (conversionMode === "simple") {
+        // Convert workbook to JSON (each sheet as an array of rows)
+        const sheetData: ExcelSheetData = workbook.SheetNames.reduce((acc: ExcelSheetData, sheetName: string) => {
+          const sheet: XLSX.WorkSheet = workbook.Sheets[sheetName];
+          const jsonData: Array<Record<string, any>> = XLSX.utils.sheet_to_json(sheet);
+          acc[sheetName] = jsonData;
+          return acc;
+        }, {});
+        jsonData = JSON.stringify(sheetData, null, 2);
+      } else if (conversionMode === "full") {
+        jsonData = JSON.stringify(workbook, null, 2)
+      }
+      
       // Write JSON data to the output file
-      fs.writeFileSync(outputJsonPath, JSON.stringify(sheetData, null, 2), 'utf-8');
+      fs.writeFileSync(outputJsonPath, jsonData, 'utf-8');
       console.log('\n', `Excel data has been successfully converted and saved to: ${outputJsonPath}`, '\n');
     } catch (err) {
       console.error('Error reading file:', err);
@@ -146,30 +153,41 @@ export default class ExcelConvertor {
   }
 
 
-  async convertJSONToExcel(inputJsonPath: string, outputExcelPath: string): Promise<void> {
+  async convertJSONToExcel(conversionMode: string, inputJsonPath: string, outputExcelPath: string): Promise<void> {
 
     try {
       // Read the JSON file
       const jsonData = fs.readFileSync(inputJsonPath, 'utf-8');
       
+      let workbook: XLSX.WorkBook;
       // Parse the JSON data
-      const parsedJSONData: Record<string, any> = JSON.parse(jsonData);
-    
-      // Create a new workbook
-      const workbook: XLSX.WorkBook = XLSX.utils.book_new();
-    
-      // Iterate through each sheet in the JSON data
-      for (const sheetName in parsedJSONData) {
-        if (parsedJSONData.hasOwnProperty(sheetName)) {
-          const sheetData = parsedJSONData[sheetName];
-    
-          // Convert each sheet's data (array of objects) into a sheet in the Excel workbook
-          const sheet: XLSX.WorkSheet = XLSX.utils.json_to_sheet(sheetData);
-          
-          // Add the sheet to the workbook
-          XLSX.utils.book_append_sheet(workbook, sheet, sheetName);
+      const parsedJSONData: any = JSON.parse(jsonData);
+      
+      if (conversionMode === "simple") {
+        
+        if (parsedJSONData.hasOwnProperty("bookType")) {
+          console.log('\n'+'Error: This JSON data saved in other mode. Use "full" mode to convert data.'+'\n');
+          return;
         }
+        // Create a new workbook
+        workbook = XLSX.utils.book_new();
+      
+        // Iterate through each sheet in the JSON data
+        for (const sheetName in parsedJSONData) {
+          if (parsedJSONData.hasOwnProperty(sheetName)) {
+            const sheetData = parsedJSONData[sheetName];
+      
+            // Convert each sheet's data (array of objects) into a sheet in the Excel workbook
+            const sheet: XLSX.WorkSheet = XLSX.utils.json_to_sheet(sheetData);
+            
+            // Add the sheet to the workbook
+            XLSX.utils.book_append_sheet(workbook, sheet, sheetName);
+          }
+        }
+      } else if (conversionMode === "full") {
+        workbook = parsedJSONData;
       }
+      
 
       const options: XLSX.WritingOptions = {
         bookType: 'xlsx', // Specify the Excel format (xlsx, xlsm, etc.)
@@ -186,10 +204,17 @@ export default class ExcelConvertor {
 
 }
 
+const conversionModes = ["simple", "full"]
 
 const conversionDirection: string = process.argv[2];
-const sourcePath: string = process.argv[3];
-const destinationPath: string = process.argv[4];
+const conversionMode: string = process.argv[3];
+if (!conversionModes.includes(conversionMode)) {
+  console.log('Error: Exists only "simple" and "full" conversion mode, check command.');
+} else {
+  const sourcePath: string = process.argv[4];
+  const destinationPath: string = process.argv[5];
+  
+  const excel_convertor = new ExcelConvertor()
+  Promise.resolve(excel_convertor.chooseConvertor(conversionDirection, conversionMode, sourcePath, destinationPath));
+}
 
-const excel_convertor = new ExcelConvertor()
-Promise.resolve(excel_convertor.chooseConvertor(conversionDirection, sourcePath, destinationPath));

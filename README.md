@@ -32,29 +32,45 @@ npm run build
 ### Convert Excel to JSON.
 
 ```bash
-node main.js convertexcel FolderPaths/ExceFile.xlsx
+node main.js convertexcel simple FolderPaths/ExceFile.xlsx
 ```
 Result JSON file will be saved to current folder with this Excel file.
 
 Run with output folder:
 ```bash
-node main.js convertexcel FolderPaths/ExceFile.xlsx OutputFolderPath
+node main.js convertexcel simple FolderPaths/ExceFile.xlsx OutputFolderPath
 ```
 
 If path have spaces need use quotes.
 ```bash
-node main.js convertexcel "FolderPaths/ExceFile.xlsx" "OutputFolderPath"
+node main.js convertexcel simple "FolderPaths/ExceFile.xlsx" "OutputFolderPath"
 ```
 
 
 ### Convert JSON to Excel.
 
 ```bash
-node main.js convertjson FolderPaths/JSONFile.json
+node main.js convertjson simple FolderPaths/JSONFile.json
 ```
 Result Excel file will be saved to current folder with this JSON file.
 
 Run with output folder:
 ```bash
-node main.js convertjson "FolderPaths/JSONFile.json" "OutputFolderPath"
+node main.js convertjson simple "FolderPaths/JSONFile.json" "OutputFolderPath"
 ```
+
+### Convert Excel to JSON in full mode.
+
+If path have spaces need use quotes.
+```bash
+node main.js convertexcel full "FolderPaths/ExceFile.xlsx" "OutputFolderPath"
+```
+
+### Convert JSON to Excel in full mode.
+
+Run with output folder:
+```bash
+node main.js convertjson full "FolderPaths/JSONFile.json" "OutputFolderPath"
+```
+
+And also can use other types of command paramters in the same way in both "simple" mode and "full".
