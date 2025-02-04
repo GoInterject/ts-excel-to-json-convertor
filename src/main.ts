@@ -15,7 +15,6 @@ export default class ExcelConvertor {
     destinationPath: string
   ): Promise<void> {
     const [praparedSourcePath, praparedDestinationPath] = this.preparesSourceAndDestionationPaths(conoversionDirection, sourcePath, destinationPath);
-    console.log("preparesSourceAndDestionationPaths received: ", praparedSourcePath, praparedDestinationPath);
     if (conoversionDirection === "convertexcel") {
       this.convertExcelToJSON(praparedSourcePath, praparedDestinationPath)
     } else if (conoversionDirection === "convertjson") {
