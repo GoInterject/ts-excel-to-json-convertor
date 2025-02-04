@@ -89,7 +89,7 @@ export default class ExcelConvertor {
     
       // Write JSON data to the output file
       fs.writeFileSync(outputJsonPath, JSON.stringify(sheetData, null, 2), 'utf-8');
-      console.log(`Excel data has been successfully converted and saved to: ${outputJsonPath}`);
+      console.log('\n', `Excel data has been successfully converted and saved to: ${outputJsonPath}`, '\n');
     } catch (err) {
       console.error('Error reading file:', err);
     }
@@ -99,6 +99,7 @@ export default class ExcelConvertor {
 
   async convertJSONToExcel(inputJsonPath: string, outputExcelPath: string): Promise<void> {
 
+    try {
       // Read the JSON file
       const jsonData = fs.readFileSync(inputJsonPath, 'utf-8');
       
@@ -129,9 +130,10 @@ export default class ExcelConvertor {
       fs.writeFileSync(outputExcelPath, excelData)
 
       console.log('\n', `JSON data has been successfully converted and saved to: ${outputExcelPath}`, '\n');
+    } catch (err) {
+      console.error('Error reading file:', err);
+    }
   }
-
-
 
 }
 
