@@ -14,16 +14,53 @@ export default class ExcelConvertor {
     sourcePath: string, 
     destinationPath: string
   ): Promise<void> {
-    const [praparedSourcePath, praparedDestinationPath] = this.preparesSourceAndDestionationPaths(conoversionDirection, sourcePath, destinationPath);
+
+    const [praparedSourcePath, praparedDestinationPath] = this.preparesSourceAndDestionationPaths(sourcePath, destinationPath);
+
+    let selectedAction: (sourcePath: string, destinationPath: string) => void = () => {};
+
     if (conoversionDirection === "convertexcel") {
-      this.convertExcelToJSON(praparedSourcePath, praparedDestinationPath)
+      selectedAction = this.convertExcelToJSON;
     } else if (conoversionDirection === "convertjson") {
-      this.convertJSONToExcel(praparedSourcePath, praparedDestinationPath)
+      selectedAction = this.convertJSONToExcel;
     }
+    
+    const statsSourcePath = fs.statSync(praparedSourcePath);
+    const statsDestinationPath = fs.statSync(praparedDestinationPath);
+    if (statsSourcePath.isDirectory() && statsDestinationPath.isDirectory()) {
+
+      const files = fs.readdirSync(praparedSourcePath);
+      files.forEach((file) => {
+        const sourceFilePath = path.join(praparedSourcePath, file);
+        const stats = fs.statSync(sourceFilePath);
+        if (stats.isFile()) {
+          const fileExtension = path.extname(file);  // Get the file extension
+          if (fileExtension === this.getFileExtFromDirectionConversion(conoversionDirection, true)) {
+            const destinationFilePath: string = this.getDestinationFilePath(
+              conoversionDirection, 
+              sourceFilePath, 
+              praparedDestinationPath
+            );
+            selectedAction(sourceFilePath, destinationFilePath);
+          }
+        }
+      });
+
+    } else if (statsSourcePath.isFile()) {
+
+      const destinationFilePath: string = this.getDestinationFilePath(
+        conoversionDirection, 
+        praparedSourcePath, 
+        praparedDestinationPath
+      );
+      selectedAction(praparedSourcePath, destinationFilePath);
+
+    }
+
   }
 
+  // Created needed folder and returns full paths.
   preparesSourceAndDestionationPaths(
-    conoversionDirection: string, 
     sourcePath: string, 
     destinationPath: string
   ): [string, string] {
@@ -49,17 +86,42 @@ export default class ExcelConvertor {
       console.log(`Created output directory: "${destinationPath}"`);
     }
 
+    return [sourcePath, destinationPath];
+  }
+
+  getFileExtFromDirectionConversion(conoversionDirection: string, inverse: boolean = false) {
+
+    let outputFileExtension: string = ""
+    if (conoversionDirection === "convertexcel") {
+      if (!inverse) {
+        outputFileExtension = '.json'
+      } else {
+        outputFileExtension = '.xlsx'
+      }
+    } else if (conoversionDirection === "convertjson") {   
+      if (!inverse) {
+        outputFileExtension = '.xlsx'
+      } else {
+        outputFileExtension = '.json'
+      }
+    }
+    return outputFileExtension
+  }
+
+  // Adds file name output file to the dir path.
+  getDestinationFilePath(
+    conoversionDirection: string, 
+    sourcePath: string, 
+    destinationPath: string
+  ): string {
+    
     const stats = fs.statSync(destinationPath);
     if (stats.isDirectory()) {
       // Define output file path
       const sourceFileName = path.basename(sourcePath, path.extname(sourcePath));
 
-      let outputFileExtension: string = ""
-      if (conoversionDirection === "convertexcel") {
-        outputFileExtension = '.json'
-      } else if (conoversionDirection === "convertjson") {
-        outputFileExtension = '.xlsx'
-      }
+      const outputFileExtension: string = this.getFileExtFromDirectionConversion(conoversionDirection);
+
       const outputFileName = sourceFileName + outputFileExtension
       destinationPath = path.join(destinationPath, outputFileName);  
     } else if (stats.isFile()) {
@@ -68,7 +130,7 @@ export default class ExcelConvertor {
       console.log(`${destinationPath} is neither a file nor a directory.`);
     }
 
-    return [sourcePath, destinationPath];
+    return destinationPath;
   }
 
   async convertExcelToJSON(excelFilePath: string, outputJsonPath: string): Promise<void> {
